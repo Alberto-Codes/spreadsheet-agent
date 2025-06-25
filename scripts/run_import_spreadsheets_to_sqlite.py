@@ -60,11 +60,6 @@ class FileLogger:
         return event_dict
 
 
-INPUT_DIR = Path("data/spreadsheets")
-OUTPUT_DIR = Path("data/dbs")
-DB_PATH = OUTPUT_DIR / "local_debug.sqlite3"
-
-
 def sanitize_table_name(name: str) -> str:
     """Sanitize a string to a valid and safe SQLite table name."""
     sanitized = re.sub(r"[^a-zA-Z0-9_]", "_", name)
@@ -73,20 +68,27 @@ def sanitize_table_name(name: str) -> str:
     return sanitized
 
 
-def ensure_directories(logger: structlog.BoundLogger) -> None:
+def ensure_directories(
+    input_dir: Path,
+    output_dir: Path,
+    logger: structlog.BoundLogger,
+) -> None:
     """Ensure input and output directories exist."""
-    if not INPUT_DIR.exists():
-        logger.error("Input directory does not exist", input_dir=str(INPUT_DIR))
+    if not input_dir.exists():
+        logger.error("Input directory does not exist", input_dir=str(input_dir))
         sys.exit(1)
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
 
-def discover_spreadsheet_files(logger: structlog.BoundLogger) -> list[Path]:
+def discover_spreadsheet_files(
+    input_dir: Path,
+    logger: structlog.BoundLogger,
+) -> list[Path]:
     """Return a list of spreadsheet files in the input directory."""
     extensions = ["*.csv", "*.xlsx", "*.xls"]
     files = []
     for ext in extensions:
-        files.extend(INPUT_DIR.glob(ext))
+        files.extend(input_dir.glob(ext))
     logger.info("Discovered spreadsheet files", files=[str(f) for f in files])
     return files
 
@@ -234,15 +236,27 @@ def main() -> None:
         parser = argparse.ArgumentParser(
             description="Import spreadsheets into SQLite for local debugging."
         )
-        parser.parse_args()
+        parser.add_argument(
+            "--input-dir",
+            type=Path,
+            default=Path("data/spreadsheets"),
+            help="The directory to scan for spreadsheet files.",
+        )
+        parser.add_argument(
+            "--db-path",
+            type=Path,
+            default=Path("data/dbs") / "local_debug.sqlite3",
+            help="The path to the SQLite database file.",
+        )
+        args = parser.parse_args()
 
-        ensure_directories(logger)
-        spreadsheet_files = discover_spreadsheet_files(logger)
+        ensure_directories(args.input_dir, args.db_path.parent, logger)
+        spreadsheet_files = discover_spreadsheet_files(args.input_dir, logger)
         if not spreadsheet_files:
             logger.info("No spreadsheet files found in input directory.")
             return
 
-        with sqlite3.connect(DB_PATH) as conn:
+        with sqlite3.connect(args.db_path) as conn:
             imported_tables: list[str] = []
             for file_path in spreadsheet_files:
                 logger.info("Processing spreadsheet file", file=file_path.name)
