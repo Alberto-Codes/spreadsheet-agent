@@ -4,7 +4,7 @@ Thank you for your interest in making spreadsheet-agent better! This guide will 
 
 ---
 
-## Quick Start
+## 1. Quick Start
 1. **Fork** the repository and create a feature branch.
 2. **Install all dependencies (including dev tools):**
    ```bash
@@ -25,24 +25,38 @@ Thank you for your interest in making spreadsheet-agent better! This guide will 
 
 ---
 
-## Dependency Management
+## 2. Submitting Pull Requests
+- **Use the provided pull request template.** Fill out all sections and complete the pre-submission checklist before submitting your PR.
+- The checklist includes: following this contributing guide, adhering to code style, adding tests and documentation, ensuring all checks pass, and providing enough context for reviewers.
+- PRs that do not follow the template or checklist may be delayed or closed.
+
+---
+
+## 3. Reporting Bugs & Requesting Features
+- **Use the provided GitHub issue templates** for feature requests and bug reports. These templates will guide you to provide all necessary information for maintainers to understand and address your request efficiently.
+- For feature requests, fill out the user story, acceptance criteria, technical plan, and checklist as prompted.
+- For bugs, provide clear steps to reproduce, expected and actual behavior, and any relevant logs or screenshots.
+
+---
+
+## 4. Dependency Management
 - All dependencies, including development tools (pre-commit, ruff, ty, pytest, etc.), are managed in `pyproject.toml`.
 - Dev dependencies are listed under `[project.optional-dependencies.dev]`.
 - Use `uv sync --dev` to install everything needed for development.
 
-## Tool Configuration
+## 5. Tool Configuration
 - Linting, formatting, and import sorting are configured in the `[tool.ruff]` sections of `pyproject.toml`.
 - Project-specific scripts can be added under `[tool.hatch.envs.default.scripts]`.
 
 ---
 
-## Code Style & Quality
+## 6. Code Style & Quality
 - **Style Guide:** [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)
 - **Linting & Formatting:** [Ruff](https://docs.astral.sh/ruff/) for linting, formatting, and import sorting
 - **Type Safety:** All code must have explicit type annotations and pass [`ty`](https://github.com/hynek/ty) checks
 - **Reference:** See `.cursor/rules/python-style.mdc` for detailed style rules
 
-## Testing
+## 7. Testing
 - **Framework:** [pytest](https://docs.pytest.org/en/stable/)
 - **Test Location:** All tests in the `tests/` directory
 - **Naming:**
@@ -51,7 +65,7 @@ Thank you for your interest in making spreadsheet-agent better! This guide will 
   - Test functions: `test_*`
 - **Reference:** See `.cursor/rules/pytest-rules.mdc` for detailed testing rules
 
-## Pre-commit Hooks
+## 8. Pre-commit Hooks
 We use [pre-commit](https://pre-commit.com/) to automate code quality checks before every commit. **All contributors must install and use pre-commit.**
 
 ### What Gets Checked?
@@ -78,7 +92,7 @@ We use [pre-commit](https://pre-commit.com/) to automate code quality checks bef
 
 ---
 
-## Git Workflow
+## 9. Git Workflow
 - **Fork & PR:** Always fork the repo and submit changes via pull requests. Do not push directly to `main` or `develop`.
 - **Feature Branches:** Create a new branch for each feature or fix.
 - **Commit Messages:** Use [Conventional Commits](https://www.conventionalcommits.org/) (e.g., `feat(auth): add login with Google`).
@@ -87,7 +101,7 @@ We use [pre-commit](https://pre-commit.com/) to automate code quality checks bef
 
 ---
 
-## To Be Detailed
+## 10. To Be Detailed
 
 ### Environment Setup
 - Use `uv` for environment and dependency management.
@@ -101,10 +115,6 @@ We use [pre-commit](https://pre-commit.com/) to automate code quality checks bef
 - How to request a review and what to expect.
 - [Instructions to be added.]
 
-### Reporting Bugs & Requesting Features
-- Use GitHub Issues and the provided templates.
-- [Instructions to be added.]
-
 ---
 
 ## Additional Resources
@@ -113,4 +123,8 @@ We use [pre-commit](https://pre-commit.com/) to automate code quality checks bef
 
 ---
 
-*This document will evolve as our workflow and culture develop. Suggestions and improvements are always welcome!* 
+**Summary:**
+- Always use the provided templates for PRs and issues.
+- Follow the code style, testing, and workflow guidelines.
+- Ensure all checks pass before submitting your work.
+- When in doubt, ask questions or suggest improvements—collaboration is welcome! 
