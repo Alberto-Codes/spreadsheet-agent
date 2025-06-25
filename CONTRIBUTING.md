@@ -41,7 +41,7 @@ Thank you for your interest in making spreadsheet-agent better! This guide will 
 
 ## 4. Dependency Management
 - All dependencies, including development tools (pre-commit, ruff, ty, pytest, etc.), are managed in `pyproject.toml`.
-- Dev dependencies are listed under `[project.optional-dependencies.dev]`.
+- Dev dependencies are listed under `[dependency-groups]` in `pyproject.toml`.
 - Use `uv sync --dev` to install everything needed for development.
 
 ## 5. Tool Configuration
@@ -127,4 +127,4 @@ We use [pre-commit](https://pre-commit.com/) to automate code quality checks bef
 - Always use the provided templates for PRs and issues.
 - Follow the code style, testing, and workflow guidelines.
 - Ensure all checks pass before submitting your work.
-- When in doubt, ask questions or suggest improvements—collaboration is welcome! 
+- When in doubt, ask questions or suggest improvements—collaboration is welcome!
