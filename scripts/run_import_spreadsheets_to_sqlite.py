@@ -131,7 +131,7 @@ def import_excel_to_sqlite(
         }
         logger.info(msg, **log_args)
         return table_name
-    except (OSError, sqlite3.DatabaseError) as e:
+    except (pd.errors.ParserError, ValueError, OSError, sqlite3.DatabaseError) as e:
         msg = "Failed to import Excel sheet"
         tb_str = traceback.format_exc()
         log_args = {
