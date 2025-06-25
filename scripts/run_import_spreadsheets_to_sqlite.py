@@ -13,51 +13,9 @@ import sqlite3
 import sys
 import traceback
 from pathlib import Path
-from types import TracebackType
 
 import pandas as pd
 import structlog
-
-LOG_FILE = Path(__file__).parent / "import_spreadsheets_to_sqlite.log"
-
-
-class FileLogger:
-    """Structlog processor to log events to a file in JSON format."""
-
-    def __init__(self: "FileLogger", file_path: Path) -> None:
-        """Initialize the file logger with the given file path."""
-        self._file = None
-        self.file_path = file_path
-
-    def __enter__(self: "FileLogger") -> "FileLogger":
-        """Open the log file."""
-        self._file = open(self.file_path, "a", encoding="utf-8")
-        return self
-
-    def __exit__(
-        self: "FileLogger",
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        """Close the log file."""
-        if self._file:
-            self._file.close()
-
-    def __call__(
-        self: "FileLogger",
-        logger: structlog.BoundLogger,
-        method_name: str,
-        event_dict: dict,
-    ) -> dict:
-        """Write the event dict as JSON to the log file."""
-        if self._file is None:
-            msg = "FileLogger is not used as a context manager."
-            raise TypeError(msg)
-        rendered = structlog.processors.JSONRenderer()(logger, method_name, event_dict)
-        self._file.write(str(rendered) + "\n")
-        self._file.flush()
-        return event_dict
 
 
 def sanitize_table_name(name: str) -> str:
@@ -223,52 +181,56 @@ def validate_import(
 
 def main() -> None:
     """Import all spreadsheets in the input directory into SQLite tables."""
-    with FileLogger(LOG_FILE) as file_logger:
-        structlog.configure(
-            processors=[
-                structlog.processors.TimeStamper(fmt="iso"),
-                structlog.processors.format_exc_info,
-                file_logger,
-            ]
-        )
-        logger = structlog.get_logger()
+    # Configure structlog with simple console output
+    structlog.configure(
+        processors=[
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.add_log_level,
+            structlog.processors.StackInfoRenderer(),
+            structlog.dev.ConsoleRenderer(),
+        ],
+        wrapper_class=structlog.make_filtering_bound_logger(20),  # INFO level
+        logger_factory=structlog.PrintLoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+    logger = structlog.get_logger()
 
-        parser = argparse.ArgumentParser(
-            description="Import spreadsheets into SQLite for local debugging."
-        )
-        parser.add_argument(
-            "--input-dir",
-            type=Path,
-            default=Path("data/spreadsheets"),
-            help="The directory to scan for spreadsheet files.",
-        )
-        parser.add_argument(
-            "--db-path",
-            type=Path,
-            default=Path("data/dbs") / "local_debug.sqlite3",
-            help="The path to the SQLite database file.",
-        )
-        args = parser.parse_args()
+    parser = argparse.ArgumentParser(
+        description="Import spreadsheets into SQLite for local debugging."
+    )
+    parser.add_argument(
+        "--input-dir",
+        type=Path,
+        default=Path("data/spreadsheets"),
+        help="The directory to scan for spreadsheet files.",
+    )
+    parser.add_argument(
+        "--db-path",
+        type=Path,
+        default=Path("data/dbs") / "local_debug.sqlite3",
+        help="The path to the SQLite database file.",
+    )
+    args = parser.parse_args()
 
-        ensure_directories(args.input_dir, args.db_path.parent, logger)
-        spreadsheet_files = discover_spreadsheet_files(args.input_dir, logger)
-        if not spreadsheet_files:
-            logger.info("No spreadsheet files found in input directory.")
-            return
+    ensure_directories(args.input_dir, args.db_path.parent, logger)
+    spreadsheet_files = discover_spreadsheet_files(args.input_dir, logger)
+    if not spreadsheet_files:
+        logger.info("No spreadsheet files found in input directory.")
+        return
 
-        with sqlite3.connect(args.db_path) as conn:
-            imported_tables: list[str] = []
-            for file_path in spreadsheet_files:
-                logger.info("Processing spreadsheet file", file=file_path.name)
-                table_name = import_spreadsheet_to_sqlite(file_path, conn, logger)
-                if table_name:
-                    imported_tables.append(table_name)
-                else:
-                    logger.warning(
-                        "Skipped file due to import error",
-                        file=file_path.name,
-                    )
-            validate_import(conn, imported_tables, logger)
+    with sqlite3.connect(args.db_path) as conn:
+        imported_tables: list[str] = []
+        for file_path in spreadsheet_files:
+            logger.info("Processing spreadsheet file", file=file_path.name)
+            table_name = import_spreadsheet_to_sqlite(file_path, conn, logger)
+            if table_name:
+                imported_tables.append(table_name)
+            else:
+                logger.warning(
+                    "Skipped file due to import error",
+                    file=file_path.name,
+                )
+        validate_import(conn, imported_tables, logger)
 
 
 if __name__ == "__main__":
