@@ -19,6 +19,9 @@ spreadsheet-agent = "spreadsheet_agent:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+# Tools like pre-commit, ruff, and ty can be installed globally with:
+# uv tool install pre-commit ruff ty --with pre-commit-uv
+# They are also included here for reproducibility and CI.
 [dependency-groups]
 dev = [
     "hatch>=1.13.1",
