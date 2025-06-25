@@ -1,5 +1,5 @@
 ---
-description: 
+description:
 globs: *.py
 alwaysApply: false
 ---
@@ -43,4 +43,4 @@ These rules are derived from the project's `pyproject.toml` and must be followed
 
 ---
 
-**These rules must be followed for all Python code contributions to this repository.** 
+**These rules must be followed for all Python code contributions to this repository.**

@@ -1,16 +1,16 @@
 ---
 description: git commit message rules
-globs: 
+globs:
 alwaysApply: false
 ---
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: false
 ---
 ---
 description: Git conventions and workflow guidelines using Conventional Commits
-globs: 
+globs:
 alwaysApply: false
 ---
 # Git Conventions and Workflow Guidelines 🔄
@@ -92,18 +92,18 @@ Examples:
    ```bash
    # First, check if you're on a protected branch
    git branch --show-current
-   
+
    # If on main/master, create and checkout a new feature branch
    git checkout -b feat/my-new-feature main
-   
+
    # Make changes and commit
    git add .
    git commit -m "feat(scope): add new feature"
-   
+
    # Keep branch updated with main
    git fetch origin main
    git rebase origin/main
-   
+
    # Push changes
    git push origin feat/my-new-feature
    ```
@@ -122,7 +122,7 @@ Examples:
    git checkout main
    git pull origin main
    git checkout -b release/v1.0.0
-   
+
    # After testing, merge back to main via PR
    # After PR is approved and merged:
    git checkout main
@@ -172,7 +172,7 @@ The Model Context Protocol (MCP) Git integration allows you to perform Git opera
    ```python
    # First check current branch
    mcp_git_git_status(repo_path=".")
-   
+
    # If on main/master, create and switch to feature branch
    mcp_git_git_create_branch(
        repo_path=".",
@@ -189,7 +189,7 @@ The Model Context Protocol (MCP) Git integration allows you to perform Git opera
    ```python
    # View unstaged changes
    mcp_git_git_diff_unstaged(repo_path=".")
-   
+
    # View staged changes
    mcp_git_git_diff_staged(repo_path=".")
    ```
@@ -207,7 +207,7 @@ The Model Context Protocol (MCP) Git integration allows you to perform Git opera
            base_branch="main"
        )
        mcp_git_git_checkout(repo_path=".", branch_name=branch_name)
-   
+
    # Then stage and commit
    mcp_git_git_add(repo_path=".", files=["path/to/file"])
    mcp_git_git_commit(
@@ -260,7 +260,7 @@ mcp_git_git_log(repo_path=".", max_count=5)
    ```python
    # Review unstaged changes
    mcp_git_git_diff_unstaged(repo_path=".")
-   
+
    # Review staged changes
    mcp_git_git_diff_staged(repo_path=".")
    ```
@@ -298,7 +298,7 @@ When working with MCP Git operations, follow these guidelines for path handling:
 
    # Transform the path before using
    import os
-   
+
    def normalize_path(path):
        # Remove URL encoding
        path = path.replace("%3A", ":")
@@ -327,7 +327,7 @@ When working with MCP Git operations, follow these guidelines for path handling:
    ```python
    # Before any MCP Git operation
    repo_path = normalize_path(workspace_path)
-   
+
    # Then use in MCP Git commands
    mcp_git_git_status(repo_path=repo_path)
    mcp_git_git_add(repo_path=repo_path, files=["file.txt"])
