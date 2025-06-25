@@ -1,6 +1,6 @@
 ---
 description: Python test
-globs: 
+globs:
 alwaysApply: false
 ---
 # Unit Testing Rules and Best Practices
@@ -283,4 +283,4 @@ def test_get_sqlite_schema_success(monkeypatch: pytest.MonkeyPatch) -> None:
 
 ## Additional Resources
 - [pytest documentation](mdc:https:/docs.pytest.org/en/stable)
-- [pytest-with-eric.com best practices](mdc:https:/pytest-with-eric.com/introduction/python-unit-testing-best-practices) 
+- [pytest-with-eric.com best practices](mdc:https:/pytest-with-eric.com/introduction/python-unit-testing-best-practices)
