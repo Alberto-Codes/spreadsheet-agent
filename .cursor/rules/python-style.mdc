@@ -1,0 +1,46 @@
+---
+description: 
+globs: *.py
+alwaysApply: false
+---
+# Cursor Rules for Python Development
+
+These rules are derived from the project's `pyproject.toml` and must be followed for all Python code in this repository.
+
+## 1. Code Style & Linting
+- **Line length:** Limit all lines to 88 characters, including docstrings and multi-line strings (Black default).
+- **String quotes:** Use double quotes for all strings, including docstrings and multi-line strings.
+- **Python version:** Write code compatible with Python 3.12.
+- **Formatting:**
+  - All code must be formatted according to Black's style, as enforced by Ruff's formatter.
+  - Include trailing commas in multi-line collections and function signatures where valid.
+- **Import sorting:**
+  - All imports must be sorted according to isort's style, as enforced by Ruff.
+  - Group imports into standard library, third-party, and local imports, separated by a blank line.
+- **Linting:**
+  - Enforce Ruff rules: E, F, W, I, B, D, N, ANN, UP, C4, A, S, COM, T10, BLE, PIE.
+  - Ignore: E203, COM812, UP007.
+  - In test files (`tests/*.py`), ignore S101 (assert used).
+- **Docstrings:** Use Google-style docstrings for all public functions and classes.
+
+## 2. Type Annotations
+- All functions must have explicit type annotations.
+- Avoid returning `Any` type.
+- It is acceptable if some imports are missing type stubs.
+
+## 3. Testing (pytest)
+- Place all tests in the `tests/` directory.
+- Test files must be named `test_*.py` or `*_test.py`.
+- Test classes must be named `Test*`.
+- Test functions must be named `test_*`.
+- Only use pytest markers defined in `pyproject.toml` (e.g., `unit`).
+- Use `--strict-markers`: unrecognized markers are errors.
+
+## 4. Automated Enforcement
+- Use Ruff for linting, formatting (Black style), and import sorting (isort style).
+- Pre-commit hooks and CI should run Ruff with `--fix` to auto-correct style and import issues.
+- Use ty for type checking `ty check .`
+
+---
+
+**These rules must be followed for all Python code contributions to this repository.** 

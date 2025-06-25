@@ -1,0 +1,286 @@
+---
+description: Python test
+globs: 
+alwaysApply: false
+---
+# Unit Testing Rules and Best Practices
+
+This document outlines the rules and best practices for writing unit tests in the `analyst_agent` project. It combines project-specific conventions with industry best practices, especially those from [pytest-with-eric.com](mdc:https:/pytest-with-eric.com/introduction/python-unit-testing-best-practices), [pytest-with-eric.com/pytest-organize-tests](mdc:https:/pytest-with-eric.com/pytest-best-practices/pytest-organize-tests), and [pytest-with-eric.com/introduction/python-testing-strategy/](mdc:https:/pytest-with-eric.com/introduction/python-testing-strategy).
+
+## Test Organization
+
+### Organize by the Testing Pyramid
+- **Unit tests:** Fast, isolated, and numerous. Test individual functions/classes.
+- **Integration tests:** Fewer, test how components work together (e.g., API/database interactions).
+- **End-to-end (E2E) tests:** Fewest, simulate real user workflows.
+- **Folder structure example:**
+  ```
+  tests/
+    unit/
+      test_foo.py
+      ...
+    integration/
+      test_api.py
+      ...
+    e2e/
+      test_user_journey.py
+      ...
+    conftest.py
+  ```
+- Use pytest markers (e.g., `@pytest.mark.unit`) to label and selectively run test types.
+
+### Mirror Application Structure
+- Structure your test folders to reflect your application's modules for clarity and maintainability.
+- Example:
+  ```
+  src/
+    models/
+      user.py
+      ...
+    services/
+      payment_service.py
+      ...
+  tests/
+    models/
+      test_user.py
+      ...
+    services/
+      test_payment_service.py
+      ...
+  ```
+- This makes it easy to locate and update tests as code changes.
+
+### Organize Fixtures Thoughtfully
+- Use `conftest.py` for shared fixtures. Place in the root `tests/` for global fixtures, or in subfolders for localized fixtures.
+- **Centralized fixtures:** Good for widely shared setup (e.g., database connections).
+- **Localized fixtures:** Place `conftest.py` in subfolders for fixtures only relevant to those tests.
+- **Hybrid approach:** Use both, and consider a `fixtures/` folder for reusable, broadly shared fixtures.
+- Example:
+  ```
+  tests/
+    fixtures/
+      fixtures_db.py
+      fixtures_api.py
+    unit/
+      conftest.py  # unit-test-specific fixtures
+      test_models.py
+    integration/
+      conftest.py  # integration-test-specific fixtures
+      test_api.py
+    conftest.py    # global fixtures
+  ```
+
+### Tests Inside vs. Outside Application Code
+- **Outside (recommended for production):**
+  - Keeps application code clean and free of test artifacts.
+  - Reduces deployment risk and improves clarity.
+  - Example:
+    ```
+    project/
+      src/
+        ...
+      tests/
+        unit/
+        integration/
+        e2e/
+    ```
+- **Inside (for small libraries or quick prototyping):**
+  - Tests are colocated with the code they validate.
+  - Can clutter codebase and risk deploying test code.
+  - Example:
+    ```
+    src/
+      models/
+        user.py
+        tests/
+          test_user.py
+    ```
+- Choose the approach that best fits your project's size and needs, but for scalable production projects, keep tests outside the application code.
+
+### Consistency and Scalability
+- Use consistent naming conventions and folder structures.
+- Avoid overloading test files or fixtures.
+- Regularly review and refactor test organization as the project grows.
+- Group related tests and fixtures for clarity and maintainability.
+
+## Testing Strategy and What to Test
+
+- **Prioritize tests for:**
+  - Core functionality and features
+  - Boundary conditions (min/max/edge cases)
+  - Error handling and failure modes
+  - Performance constraints (if applicable)
+  - Regression scenarios (add a test for every bug fixed)
+  - Security, especially for authentication, authorization, and data handling
+
+- **Test Design:**
+  - Focus on the public interface (not private/internal methods).
+  - Distinguish between:
+    - **Queries:** Test by asserting return values.
+    - **Commands:** Test by asserting side effects, using mocks/stubs for external systems.
+  - Honor the contract when mocking external dependencies.
+
+- **Test Suite Qualities:**
+  - Tests must be fast, stable, thorough, few, isolated, and idempotent.
+
+## Mocking Best Practices
+
+- **Avoid coupling tests to implementation details.**
+  - Mock public interfaces, not internal methods or private logic.
+  - Prefer testing behavior over internal calls.
+- **Patch the correct target.**
+  - Patch where the object is *used*, not where it is *defined*.
+  - Incorrect patch targets can lead to false positives or brittle tests.
+- **Respect method signatures with `autospec`.**
+  - Use `autospec=True` with `unittest.mock` to ensure mocks match the real method signatures.
+- **Use dependency injection.**
+  - Inject dependencies so they can be easily replaced with mocks or fakes in tests.
+- **Prefer fakes over mocks when possible.**
+  - Fakes are simpler, more robust, and less coupled to implementation details.
+- **Define all mocks in one place.**
+  - Centralize mock definitions in fixtures or setup functions for maintainability.
+- **Separate state from behavior.**
+  - Isolate storage/state management from business logic to simplify mocking and testing.
+- **Use mocking judiciously:**
+  - Mock to avoid expensive, slow, or non-deterministic resources (e.g., network, time, randomness).
+  - Mock to simulate errors or edge cases that are hard to reproduce otherwise.
+  - Do not overuse mocking; supplement with full system/integration tests to catch issues mocks may miss.
+- **Test interfaces, not implementation.**
+  - Focus on the contract your code exposes, not how it is implemented under the hood.
+
+## Separation of Unit and Integration Tests
+
+- Organize and mark unit and integration tests separately.
+- Run unit tests frequently; run integration tests as needed.
+- Use failures to quickly identify whether the issue is in a component or in their integration.
+
+---
+
+## General Principles
+- **All unit tests must use `pytest`.**
+- **Test files must be placed in the `tests/` directory.**
+- **Test file names:**
+  - Use `test_*.py` or `*_test.py`.
+- **Test class and function names:**
+  - Classes: `Test*`
+  - Functions: `test_*`
+- **Each test should test one thing and be independent.**
+- **Tests must be fast, isolated, and not depend on external systems.**
+
+## Code Quality and Style
+- **Use Google-style docstrings and type hints in all code, including tests.**
+- **Follow the 88-character line length limit.**
+- **Linting:**
+  - Ruff is used for linting and formatting.
+  - S101 (assert usage) is ignored in test files.
+- **Type checking:**
+  - All code, including tests, must pass mypy type checks.
+
+## Writing Tests
+- **Use plain `assert` statements for clarity.**
+- **Name tests clearly to describe their purpose.**
+- **Avoid logic in tests; keep them simple and direct.**
+- **Write tests for both success and failure/error cases.**
+- **Document tests with concise docstrings.**
+- **Use fixtures for setup/teardown, not `setUp`/`tearDown` methods.**
+- **Use parameterization for repetitive tests.**
+- **Mock external dependencies and side effects.**
+- **Use `monkeypatch` for environment variable manipulation.**
+- **Clean up temporary files and resources after tests.**
+
+## Determinism
+- **Tests must always produce the same result given the same code and environment.**
+- Avoid randomness, or set seeds if randomness is required.
+- Mock or isolate external dependencies (APIs, databases, time, etc.).
+
+## Avoid Implementation Details
+- **Test public interfaces and behaviors, not internal implementation details.**
+- Avoid coupling tests to the internal structure of the code.
+
+## Tests as Documentation
+- **Write tests that clearly describe the intended behavior and serve as living documentation.**
+- Use descriptive names and docstrings to explain the purpose of each test.
+
+## CI/CD Integration
+- **All tests must run in CI/CD pipelines and block merges on failure.**
+- Tests should be part of the commit and build process.
+
+## Single Assert Principle
+- **Prefer a single assert per test for clarity, unless multiple asserts are needed for context.**
+- This helps pinpoint the source of failures quickly.
+
+## Use Fake Data and Dependency Injection
+- **Use fake or in-memory databases and dependency injection to isolate units under test.**
+- Never use production data in tests.
+
+## Group Related Tests
+- **Organize related tests into classes or modules for clarity and maintainability.**
+- Group tests by feature, module, or functionality.
+
+## Leverage Pytest Features
+- **Use `conftest.py` for shared fixtures and parameterization.**
+- Take advantage of pytest's advanced features to reduce duplication and improve test organization.
+
+## Test Driven Development (TDD)
+- **Write tests before implementing new features or bug fixes.**
+- Use the "Red-Green-Refactor" cycle: write a failing test, make it pass, then refactor.
+
+## Regular Test Review and Refactoring
+- **Regularly review and refactor tests for readability, relevance, and efficiency.**
+- Remove redundancy, update tests to reflect code changes, and improve organization.
+
+## Test Coverage
+- **Use coverage tools (e.g., coverage.py) to ensure all code paths, especially edge cases, are tested.**
+- Aim for high coverage, but prioritize meaningful tests over coverage percentage.
+
+## Coverage Reports
+- **Generating Coverage Reports:**
+  - Use the `coverage` tool to run your tests and collect coverage data.
+    ```bash
+    coverage run -m pytest
+    ```
+  - To view a terminal report:
+    ```bash
+    coverage report -m
+    ```
+  - To generate a detailed HTML report:
+    ```bash
+    coverage html
+    ```
+    Then open `htmlcov/index.html` in your browser for a visual report.
+- **What Coverage Means:**
+  - 100% coverage means every line of code is executed by tests, but this does **not** guarantee bug-free code.
+  - Use coverage reports to identify untested code paths and guide additional test writing.
+- **Deterministic vs. Random Data:**
+  - Prefer deterministic data for most tests to ensure repeatability and reliability.
+  - Consider using libraries like `hypothesis` or `faker` for property-based or randomized testing, but always ensure tests are reproducible (e.g., by setting seeds).
+- **CI/CD Integration:**
+  - Consider making coverage checks part of your CI pipeline, and optionally fail builds if coverage drops below a threshold.
+- **References:**
+  - [pytest-with-eric.com: Pytest Code Coverage Reports](mdc:https:/pytest-with-eric.com/pytest-best-practices/pytest-code-coverage-reports)
+
+## Security Testing
+- **Write tests to check for security vulnerabilities (e.g., SQL injection).**
+- Use tools like Bandit to scan for security issues.
+- Include negative tests for invalid or malicious input.
+
+## Running Tests
+- Run tests with:
+  ```bash
+  PYTHONPATH=src uv run pytest
+  ```
+- Pytest is configured in `pyproject.toml` for test discovery and options.
+
+## Example Test Structure
+```python
+import pytest
+from analyst_agent.core.tools.sqlite_schema_tool import get_sqlite_schema
+
+def test_get_sqlite_schema_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test schema extraction from a valid temporary SQLite DB."""
+    # ... test code ...
+```
+
+## Additional Resources
+- [pytest documentation](mdc:https:/docs.pytest.org/en/stable)
+- [pytest-with-eric.com best practices](mdc:https:/pytest-with-eric.com/introduction/python-unit-testing-best-practices) 
