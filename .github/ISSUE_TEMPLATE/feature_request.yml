@@ -10,13 +10,13 @@ body:
         - Use the imperative, present tense (e.g., "Add", "Fix", "Update", not "Added" or "Fixes").
         - Do not repeat the type (Feature, Bug, etc.) in the title if it is already in the prefix or label.
         - Example: `[Feature] Add DuckDB model for ingestion pipeline`
-        
+
         Thanks for taking the time to suggest a new feature! Please fill out this template to help us understand your request better.
-        
+
         ## User Story
-        Please use the format:  
+        Please use the format:
         **As a** [user/persona], **I want** [feature], **so that** [benefit].
-        
+
         Example: As a data analyst, I want to export reports in PDF format, so that I can share them with stakeholders who prefer PDF documents.
   - type: textarea
     id: user-story
@@ -134,4 +134,4 @@ body:
         - Related issues/PRs
         - External references
         - User research findings
-        - Any other relevant information 
+        - Any other relevant information
