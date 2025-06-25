@@ -99,7 +99,7 @@ def import_spreadsheet_to_sqlite(
     """Import a spreadsheet into a SQLite table."""
     ext = file_path.suffix.lower()
     if ext == ".csv":
-        return import_csv_to_sqlite(file_path, conn, logger)
+        return import_csv_to_sqlite(file_path, conn, logger, on_bad_lines="skip")
     if ext in [".xlsx", ".xls"]:
         return import_excel_to_sqlite(file_path, conn, logger)
     logger.warning("Unsupported file type", file=file_path.name)
@@ -148,17 +148,22 @@ def import_csv_to_sqlite(
     csv_path: Path,
     conn: sqlite3.Connection,
     logger: structlog.BoundLogger,
+    on_bad_lines: str | None = None,
 ) -> str | None:
     """Import a CSV into a SQLite table with a dynamic schema.
+
+    Args:
+        csv_path: Path to the CSV file.
+        conn: SQLite connection object.
+        logger: Logger for structured logging.
+        on_bad_lines: Policy for handling bad lines in the CSV file.
+            Defaults to None.
 
     Returns:
         The sanitized table name if successful, otherwise None.
     """
     try:
-        if csv_path.name == "orders.csv":
-            df = pd.read_csv(csv_path, on_bad_lines="skip")
-        else:
-            df = pd.read_csv(csv_path)
+        df = pd.read_csv(csv_path, on_bad_lines=on_bad_lines)
         table_name = sanitize_table_name(csv_path.stem)
         df.to_sql(
             table_name,
