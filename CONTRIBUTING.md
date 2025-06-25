@@ -117,9 +117,39 @@ We use [pre-commit](https://pre-commit.com/) to automate code quality checks bef
 
 ---
 
+## Windows-specific Setup Notes
+
+- After running `uv run pre-commit install`, convert `.git/hooks/pre-commit` to Unix (LF) line endings:
+  - In VS Code: Open the file, click the line ending selector (bottom right), choose "LF", and save.
+  - Or, in Git Bash/WSL: run `dos2unix .git/hooks/pre-commit`
+- When committing, always use:
+  ```
+  uv run git commit -m "your message"
+  ```
+  This ensures the pre-commit hook can find the correct environment and dependencies.
+- If you see errors about missing `pre-commit` or line endings, follow the above steps to resolve them.
+
+---
+
 ## Additional Resources
 - [README.md](./README.md)
 - `.cursor/rules/` for all project rules
+
+---
+
+## Recommended: Global CLI Tool Installation
+
+For developer convenience, you may install common CLI tools globally using uv:
+
+```
+uv tool install pre-commit ruff ty --with pre-commit-uv
+```
+
+- This makes `pre-commit`, `ruff`, and `ty` available everywhere, regardless of your virtual environment.
+- You can then use these tools directly in your shell and in pre-commit hooks without environment issues.
+- We still recommend keeping these tools in your dev dependencies for reproducibility and CI.
+
+See: https://adamj.eu/tech/2025/05/07/pre-commit-install-uv/
 
 ---
 
