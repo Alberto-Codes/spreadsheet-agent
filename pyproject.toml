@@ -16,7 +16,38 @@ spreadsheet-agent = "spreadsheet_agent:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = [
+    "hatch>=1.13.1",
     "pre-commit>=4.2.0",
+    "pytest>=8.3.2",
+    "pytest-asyncio>=0.23.8",
+    "ruff>=0.5.5",
+    "ty>=0.0.1a10",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W", "I", "B", "D", "N", "ANN", "UP", "C4", "A", "S", "COM", "T10", "BLE", "PIE"
+]
+ignore = ["E203", "COM812", "UP007"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["spreadsheet_agent"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.hatch.envs.default.scripts]
+# Add project-specific scripts here, e.g.:
+# download-db = "python scripts/run_download_db.py"
