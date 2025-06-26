@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import aiofiles
 import httpx
 import pandas as pd
 import structlog
@@ -44,8 +45,8 @@ class Sp500TenKDownloader:
         self.download_dir = Path(download_dir)
         self.download_dir.mkdir(parents=True, exist_ok=True)
         self.user_agent = user_agent
-        self.rate_limit_delay = 0.1  # Not used in async, but kept for reference
         self.log = log.bind(class_name=self.__class__.__name__)
+        self._ticker_data: dict[str, Any] | None = None
 
     async def get_sp500_companies(self: "Sp500TenKDownloader") -> list[dict[str, str]]:
         """Get current S&P 500 company list from Wikipedia.
@@ -86,37 +87,45 @@ class Sp500TenKDownloader:
             )
             return []
 
-    async def get_company_cik(
-        self: "Sp500TenKDownloader", client: httpx.AsyncClient, symbol: str
-    ) -> str | None:
-        """Get CIK (Central Index Key) for a company symbol.
+    async def _get_ticker_data(
+        self: "Sp500TenKDownloader", client: httpx.AsyncClient
+    ) -> dict[str, Any] | None:
+        """Fetch and cache the SEC company ticker data."""
+        if self._ticker_data is None:
+            tickers_url = "https://www.sec.gov/files/company_tickers.json"
+            try:
+                response = await client.get(tickers_url)
+                response.raise_for_status()
+                self._ticker_data = response.json()
+            except httpx.RequestError as e:
+                self.log.error(
+                    "Error fetching company tickers", error=str(e), url=tickers_url
+                )
+                return None
+            except json.JSONDecodeError:
+                self.log.error("Error decoding company tickers JSON", url=tickers_url)
+                return None
+        return self._ticker_data
+
+    async def get_company_cik(self: "Sp500TenKDownloader", symbol: str) -> str | None:
+        """Get CIK (Central Index Key) for a company symbol from cached data.
 
         Args:
-            client: The httpx client to use for the request.
             symbol: The company's stock symbol.
 
         Returns:
             The company's CIK as a string, or None if not found.
         """
-        tickers_url = "https://www.sec.gov/files/company_tickers.json"
-        try:
-            response = await client.get(tickers_url)
-            response.raise_for_status()  # Raise an exception for bad status codes
-            tickers_data = response.json()
-            for _key, company in tickers_data.items():
-                if company["ticker"] == symbol:
-                    # CIK needs to be a 10-digit string, left-padded with zeros
-                    cik = str(company["cik_str"]).zfill(10)
-                    self.log.debug("Found CIK for symbol", symbol=symbol, cik=cik)
-                    return cik
-            self.log.warning("CIK for symbol not found", symbol=symbol)
-        except httpx.RequestError as e:
-            self.log.error(
-                "Error fetching company tickers", error=str(e), url=tickers_url
-            )
-        except json.JSONDecodeError:
-            self.log.error("Error decoding company tickers JSON", url=tickers_url)
+        if not self._ticker_data:
+            self.log.error("Ticker data not loaded. Cannot find CIK.")
+            return None
 
+        for _, company in self._ticker_data.items():
+            if company["ticker"] == symbol:
+                cik = str(company["cik_str"]).zfill(10)
+                self.log.debug("Found CIK for symbol", symbol=symbol, cik=cik)
+                return cik
+        self.log.warning("CIK for symbol not found", symbol=symbol)
         return None
 
     async def get_company_filings(
@@ -235,8 +244,8 @@ class Sp500TenKDownloader:
                 filepath = company_dir / filename
 
                 # Use async file I/O
-                with open(filepath, "w", encoding="utf-8") as f:
-                    await asyncio.to_thread(f.write, response.text)
+                async with aiofiles.open(filepath, "w", encoding="utf-8") as f:
+                    await f.write(response.text)
 
                 self.log.info("Downloaded filing", filename=filename)
                 return True
@@ -275,25 +284,29 @@ class Sp500TenKDownloader:
         main_log = self.log.bind(years_back=years_back)
         start_time = time.monotonic()
 
-        # Get S&P 500 companies
-        companies = await self.get_sp500_companies()
-        if not companies:
-            main_log.error("Could not fetch S&P 500 company list. Aborting.")
-            return
-
-        # Calculate date threshold
-        cutoff_year = datetime.now().year - years_back
-
-        main_log.info(
-            "Starting download of 10-K filings",
-            total_companies=len(companies),
-            cutoff_year=cutoff_year,
-        )
-
         headers = {"User-Agent": self.user_agent}
         async with httpx.AsyncClient(
             headers=headers, timeout=30.0, follow_redirects=True
         ) as client:
+            # Pre-fetch all company and ticker data
+            companies = await self.get_sp500_companies()
+            if not companies:
+                main_log.error("Could not fetch S&P 500 company list. Aborting.")
+                return
+
+            if await self._get_ticker_data(client) is None:
+                main_log.error("Could not fetch company ticker data. Aborting.")
+                return
+
+            # Calculate date threshold
+            cutoff_year = datetime.now().year - years_back
+
+            main_log.info(
+                "Starting download of 10-K filings",
+                total_companies=len(companies),
+                cutoff_year=cutoff_year,
+            )
+
             # Step 1: Gather all filings to be downloaded
             filings_to_download = []
             for i, company in enumerate(companies):
@@ -305,7 +318,7 @@ class Sp500TenKDownloader:
                 )
                 company_log.info("Checking company for filings")
 
-                cik = await self.get_company_cik(client, symbol)
+                cik = await self.get_company_cik(symbol)
                 if not cik:
                     company_log.warning("Could not find CIK for company")
                     continue
