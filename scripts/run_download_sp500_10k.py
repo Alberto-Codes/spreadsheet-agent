@@ -1,7 +1,6 @@
 """Script to download 10-K filings for all S&P 500 companies."""
 
 import asyncio
-import json
 import time
 from collections.abc import Coroutine
 from datetime import datetime
@@ -29,6 +28,8 @@ log = structlog.get_logger()
 
 class Sp500TenKDownloader:
     """Downloads 10-K filings for S&P 500 companies from the SEC EDGAR database."""
+
+    CONCURRENCY_LIMIT = 10
 
     def __init__(
         self: "Sp500TenKDownloader",
@@ -97,13 +98,18 @@ class Sp500TenKDownloader:
                 response = await client.get(tickers_url)
                 response.raise_for_status()
                 self._ticker_data = response.json()
+            except httpx.HTTPStatusError as e:
+                self.log.error(
+                    "HTTP error fetching company tickers",
+                    status_code=e.response.status_code,
+                    error=str(e),
+                    url=tickers_url,
+                )
+                return None
             except httpx.RequestError as e:
                 self.log.error(
                     "Error fetching company tickers", error=str(e), url=tickers_url
                 )
-                return None
-            except json.JSONDecodeError:
-                self.log.error("Error decoding company tickers JSON", url=tickers_url)
                 return None
         return self._ticker_data
 
@@ -147,6 +153,13 @@ class Sp500TenKDownloader:
             response.raise_for_status()
             return response.json()
 
+        except httpx.HTTPStatusError as e:
+            self.log.error(
+                "HTTP error fetching filings for CIK",
+                cik=cik,
+                status_code=e.response.status_code,
+                error=str(e),
+            )
         except httpx.RequestError as e:
             self.log.error(
                 "Error fetching filings for CIK",
@@ -154,8 +167,6 @@ class Sp500TenKDownloader:
                 error=str(e),
                 status_code=e.response.status_code if hasattr(e, "response") else None,  # type: ignore
             )
-        except json.JSONDecodeError:
-            self.log.error("Error decoding JSON for CIK", cik=cik, url=url)
 
         return None
 
@@ -250,6 +261,16 @@ class Sp500TenKDownloader:
                 self.log.info("Downloaded filing", filename=filename)
                 return True
 
+            except httpx.HTTPStatusError as e:
+                self.log.error(
+                    "Failed to download filing due to HTTP error",
+                    symbol=company_symbol,
+                    form_type=form_type,
+                    date=filing_date,
+                    status_code=e.response.status_code,
+                    error=str(e),
+                )
+                return False
             except httpx.RequestError as e:
                 status_code = "Unknown"
                 if hasattr(e, "response") and e.response:
@@ -355,7 +376,9 @@ class Sp500TenKDownloader:
                 "Starting concurrent download of all filings",
                 total_filings=len(filings_to_download),
             )
-            semaphore = asyncio.Semaphore(10)  # Limit to 10 concurrent requests
+            semaphore = asyncio.Semaphore(
+                self.CONCURRENCY_LIMIT
+            )  # Limit to 10 concurrent requests
             download_tasks: list[Coroutine[Any, Any, bool]] = []
             for filing_info in filings_to_download:
                 task = self.download_filing(
@@ -385,13 +408,17 @@ class Sp500TenKDownloader:
         )
         summary_log.info("Download summary")
 
-        print("\n=== DOWNLOAD SUMMARY ===")
-        print(f"Total companies processed: {len(companies)}")
-        print(f"Total filings found: {total_downloads}")
-        print(f"Successfully downloaded: {successful_downloads}")
-        print(f"Failed downloads: {total_downloads - successful_downloads}")
-        print(f"Total time: {end_time - start_time:.2f} seconds")
-        print(f"All files saved to: {self.download_dir.absolute()}")
+        # Create a human-readable summary for console output if needed
+        human_readable_summary = (
+            "\n=== DOWNLOAD SUMMARY ===\n"
+            f"Total companies processed: {len(companies)}\n"
+            f"Total filings found: {total_downloads}\n"
+            f"Successfully downloaded: {successful_downloads}\n"
+            f"Failed downloads: {total_downloads - successful_downloads}\n"
+            f"Total time: {end_time - start_time:.2f} seconds\n"
+            f"All files saved to: {self.download_dir.absolute()}\n"
+        )
+        summary_log.info(human_readable_summary)
 
 
 # Usage example
